@@ -1,49 +1,70 @@
-/* tslint:disable */
-// @ts-nocheck
-import React, {useEffect, useState} from 'react';
-
+import React, { useEffect, useState } from 'react'
 
 interface Props {
-    lat: number;
-    long: number;
-
-    variables: string[];
+  lat: number
+  long: number
+  variables: string[]
 }
 
-const Weather: React.FC<Props> = props => {
-    const [weather, setWeather] = useState()
+const Weather: React.FC<Props> = (props) => {
+  const [weather, setWeather] = useState<any>(null)
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string | null>(null)
 
-    useEffect(() => {
-        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${props.lat}&longitude=${props.long}&daily=${props.variables.join(',')}&timezone=Europe/Moscow&past_days=0`, {method: 'GET'}).then(resp => {
-            setWeather(resp.json())
-        })
-    }, [props.variables])
+  useEffect(() => {
+    const fetchWeatherData = async () => {
+      try {
+        const response = await fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=${
+            props.lat
+          }&longitude=${props.long}&daily=${props.variables.join(
+            ','
+          )}&timezone=Europe/Moscow&past_days=7`
+        )
+        const data = await response.json()
+        setWeather(data)
+        setLoading(false)
+      } catch (err) {
+        setError('Failed to fetch weather data')
+        setLoading(false)
+      }
+    }
 
+    fetchWeatherData()
+  }, [props.lat, props.long, props.variables])
 
-    return <table style={{width: '100%'}}>
-        <thead>
+  if (loading) {
+    return <div>Loading...</div>
+  }
+
+  if (error) {
+    return <div>{error}</div>
+  }
+
+  return (
+    <table style={{ width: '100%' }}>
+      <thead>
         <tr>
-            <td>date</td>
-            {props.variables.map(variable => <td>{variable}</td>)}
+          <td>Date</td>
+          {props.variables.map((variable, index) => (
+            <td key={index}>{variable}</td>
+          ))}
         </tr>
-        </thead>
-        <tbody>
-        {weather && weather.daily.time.map((time, index) => <tr>
-
-            <td>
-                {time}
-            </td>
-
-            {props.variables.map(variable =>
-                <td>
-                    {weather.daily[variable][index]}
-                </td>
-            )}
-
-        </tr>)}
-        </tbody>
+      </thead>
+      <tbody>
+        {weather?.daily?.time?.map((time: string, index: number) => (
+          <tr key={index}>
+            <td>{time}</td>
+            {props.variables.map((variable, varIndex) => (
+              <td key={varIndex}>
+                {weather.daily[variable]?.[index] || 'N/A'}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
     </table>
+  )
 }
 
-
-export default Weather;
+export default Weather
